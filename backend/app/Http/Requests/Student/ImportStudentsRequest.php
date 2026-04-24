@@ -2,28 +2,36 @@
 
 namespace App\Http\Requests\Student;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\Course;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImportStudentsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        $course = $this->route('course');
+
+        return $course instanceof Course
+            && ($this->user()?->can('update', $course) ?? false);
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'file' => [
+                'required',
+                'file',
+                // Excel / CSV；文件大小限制 5MB
+                'mimes:xlsx,xls,csv,txt',
+                'max:5120',
+            ],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'file' => '学生名单文件',
         ];
     }
 }

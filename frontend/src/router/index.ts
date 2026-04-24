@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
+import { useAuthStore } from '@/stores/auth'
 
 NProgress.configure({ showSpinner: false })
 
@@ -100,9 +101,27 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   NProgress.start()
+
   if (to.meta?.title) {
     document.title = `${to.meta.title as string} · ${import.meta.env.VITE_APP_NAME ?? ''}`
   }
+
+  const auth = useAuthStore()
+  const isPublic = to.meta?.public === true
+
+  // 已登录用户访问 /login 直接回工作台
+  if (to.name === 'login' && auth.isLoggedIn) {
+    return next({ name: 'dashboard' })
+  }
+
+  // 非公开页面必须登录
+  if (!isPublic && !auth.isLoggedIn) {
+    return next({
+      name: 'login',
+      query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined,
+    })
+  }
+
   next()
 })
 
